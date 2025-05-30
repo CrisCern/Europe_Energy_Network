@@ -2,7 +2,7 @@ import pandas as pd
 import os
 
 # === 1. Caricamento dataset disaggregato ===
-df = pd.read_csv("../data/physical_energy_and_power_flows", sep=";")
+df = pd.read_csv("../data/raw/physical_energy_and_power_flows.csv", sep=";")
 
 # === 2. Filtraggio solo righe Export ===
 df = df[df["Direction"] == "Export"]

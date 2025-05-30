@@ -1,8 +1,10 @@
 import pandas as pd
 
 # === Percorsi ===
-RAW_DATA = "physical_energy_and_power_flows"
-OUTPUT = "aggregated_flows_2024.csv"
+RAW_DATA = "../data/raw/physical_energy_and_power_flows.csv"
+OUTPUT = "../data/processed/aggregated_flows_2024.csv"
+
+
 
 # 1. Caricamento
 df = pd.read_csv(RAW_DATA, sep=";")

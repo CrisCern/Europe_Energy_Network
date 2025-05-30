@@ -46,4 +46,3 @@ plt.axis("off")
 plt.tight_layout()
 plt.savefig("network_map.png")
 plt.show()
-a

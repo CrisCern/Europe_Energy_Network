@@ -7,7 +7,6 @@ import os
 # === 1. Caricamento dati ===
 df = pd.read_csv("../data/processed/aggregated_flows_2024.csv")
 
-
 # === 2. Costruzione grafo non orientato ===
 df_undirected = df.copy()
 df_undirected["min_node"] = df_undirected[["from", "to"]].min(axis=1)
@@ -30,10 +29,10 @@ print(f"✔️ Grafo NON orientato creato con {G.number_of_nodes()} nodi e {G.nu
 partition = community_louvain.best_partition(G, weight='weight')
 
 # === 4. Salvataggio comunità ===
-os.makedirs("../metrics/metrics", exist_ok=True)
+os.makedirs("../metrics", exist_ok=True)
 df_partition = pd.DataFrame.from_dict(partition, orient='index', columns=['community'])
 df_partition.index.name = 'country'
-df_partition.to_csv("metrics/louvain_partition.csv")
+df_partition.to_csv("../metrics/louvain_partition.csv")
 
 print("\n🔍 Comunità rilevate (prime 5 righe):")
 print(df_partition.head())
@@ -42,8 +41,7 @@ print(df_partition.head())
 plt.figure(figsize=(12, 10))
 pos = nx.spring_layout(G, k=0.3, seed=42)
 
-# Colori dei nodi secondo comunità
-colors = [partition[node] for node in G.nodes]
+colors = [partition[node] for node in G.nodes()]
 nx.draw_networkx_nodes(G, pos, node_color=colors, cmap=plt.cm.Set3, node_size=300)
 nx.draw_networkx_edges(G, pos, alpha=0.3)
 nx.draw_networkx_labels(G, pos, font_size=8)
@@ -51,6 +49,7 @@ nx.draw_networkx_labels(G, pos, font_size=8)
 plt.title("European Electricity Network – Louvain Communities (2024)", fontsize=14)
 plt.axis("off")
 plt.tight_layout()
-plt.savefig("../figures/network_map_communities.png")
 
+os.makedirs("../figures", exist_ok=True)
+plt.savefig("../figures/network_map_communities.png")
 plt.show()
