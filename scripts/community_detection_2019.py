@@ -32,7 +32,7 @@ partition = community_louvain.best_partition(G, weight='weight')
 os.makedirs("../metrics_2019", exist_ok=True)
 df_partition = pd.DataFrame.from_dict(partition, orient='index', columns=['community'])
 df_partition.index.name = 'country'
-df_partition.to_csv("../metrics_2019/louvain_partition_2020.csv")
+df_partition.to_csv("../metrics_2019/louvain_partition_2019.csv")
 
 print("\n🔍 Comunità rilevate (prime 5 righe):")
 print(df_partition.head())
@@ -46,7 +46,7 @@ nx.draw_networkx_nodes(G, pos, node_color=colors, cmap=plt.cm.Set3, node_size=30
 nx.draw_networkx_edges(G, pos, alpha=0.3)
 nx.draw_networkx_labels(G, pos, font_size=8)
 
-plt.title("European Electricity Network – Louvain Communities (2020)", fontsize=14)
+plt.title("European Electricity Network – Louvain Communities (2019)", fontsize=14)
 plt.axis("off")
 plt.tight_layout()
 
