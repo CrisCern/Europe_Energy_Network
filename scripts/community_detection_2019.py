@@ -51,5 +51,5 @@ plt.axis("off")
 plt.tight_layout()
 
 os.makedirs("../figures_2019", exist_ok=True)
-plt.savefig("../figures_2019/network_map_communities_2020.png")
+plt.savefig("../figures_2019/network_map_communities_2019.png")
 plt.show()
