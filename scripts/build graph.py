@@ -44,5 +44,8 @@ nx.draw_networkx_labels(G, pos, font_size=8)
 plt.title("🌍 European Electricity Trade Network (2024)", fontsize=14)
 plt.axis("off")
 plt.tight_layout()
-plt.savefig("network_map.png")
+
+# Salva nella cartella figures/
+os.makedirs("../figures", exist_ok=True)
+plt.savefig("../figures/network_map.png")
 plt.show()
