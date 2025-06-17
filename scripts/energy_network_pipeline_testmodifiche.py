@@ -66,9 +66,51 @@ class EnergyGraphBuilder:
         print(f" Grafo creato con {G.number_of_nodes()} nodi e {G.number_of_edges()} archi")
         return G
 
+    def adjacency_matrix(self, weighted=True):
+
+        if self.G is None:
+            raise ValueError("Il grafo non è stato ancora costruito. Chiama build_graph() prima.")
+
+        if weighted:
+            adj = nx.to_pandas_adjacency(self.G, weight="weight", dtype=float)
+        else:
+            adj = nx.to_pandas_adjacency(self.G, weight=None, dtype=int)
+
+        return adj
+
+    def plot_adjacency_heatmap(self, weighted=True, figsize=(12, 10), cmap="YlGnBu"):
+
+        import seaborn as sns
+        import matplotlib.pyplot as plt
+        import os
+
+        try:
+            adj_df = self.adjacency_matrix(weighted=weighted)
+            print(f"Adjacency matrix shape: {adj_df.shape}")
+
+            plt.figure(figsize=figsize)
+            sns.heatmap(adj_df, cmap=cmap, linewidths=0.5, linecolor="gray")
+
+            plt.title(f"Heatmap Matrice di Adiacenza - {self.label}")
+            plt.xlabel("Paesi destinatari")
+            plt.ylabel("Paesi sorgente")
+            plt.xticks(rotation=45, ha='right')
+            plt.yticks(rotation=0)
+            plt.tight_layout()
 
 
-    
+            project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            figures_dir = os.path.join(project_root, "figures")
+            os.makedirs(figures_dir, exist_ok=True)
+
+            filename = os.path.join(figures_dir, f"adjacency_heatmap_{self.label}.png")
+            plt.savefig(filename, dpi=300)
+            plt.close()
+            print(f"Heatmap salvata in: {filename}")
+
+        except Exception as e:
+            print(f"Errore nella generazione della heatmap: {e}")
+
     def compute_metrics(self):
         self.metrics[f"in_degree_{self.label}"] = dict(self.G.in_degree())
         self.metrics[f"out_degree_{self.label}"] = dict(self.G.out_degree())
@@ -292,13 +334,20 @@ class CentralityMerger:
 
     def merge_and_save(self):
         bet = pd.read_csv(os.path.join(self.metrics_dir, f"betweenness_{self.label}.csv"))
-        deg = pd.read_csv(os.path.join(self.metrics_dir, f"in_degree_{self.label}.csv"))
+        in_deg = pd.read_csv(os.path.join(self.metrics_dir, f"in_degree_{self.label}.csv"))
+        out_deg = pd.read_csv(os.path.join(self.metrics_dir, f"out_degree_{self.label}.csv"))
         strg = pd.read_csv(os.path.join(self.metrics_dir, f"in_strength_{self.label}.csv"))
         part = pd.read_csv(os.path.join(self.metrics_dir, f"louvain_partition_{self.label}.csv"))
 
         bet = bet.rename(columns={bet.columns[0]: "country"})
-        deg = deg.rename(columns={deg.columns[0]: "country"})
+        in_deg = in_deg.rename(columns={in_deg.columns[0]: "country"})
+        out_deg = out_deg.rename(columns={out_deg.columns[0]: "country"})
         strg = strg.rename(columns={strg.columns[0]: "country"})
+
+        deg = in_deg.copy()
+        deg['deg'] = in_deg.iloc[:, 1] + out_deg.iloc[:, 1]
+
+        deg = deg[['country', 'deg']]
 
         df = bet.merge(deg, on='country')\
                 .merge(strg, on='country')\
@@ -452,7 +501,7 @@ class CriticalNodeComparer:
         df_2019 = pd.read_csv(self.path_2019, index_col=0)
         df_2024 = pd.read_csv(self.path_2024, index_col=0)
 
-        # NON serve rinominare, usiamo direttamente i nomi presenti
+
         df_2019 = df_2019[["balance_MWh", "betweenness_2019"]].rename(
             columns={"balance_MWh": "balance_MWh_2019"}
         )
@@ -497,12 +546,12 @@ class CriticalNodeComparer:
 
 
 def _plot_scatter_and_bar(self, df, year):
-    # Rinomina la colonna betweenness_XXXX in betweenness (se necessario)
+
     btw_col = f"betweenness_{year}"
     if btw_col in df.columns:
         df = df.rename(columns={btw_col: "betweenness"})
 
-    # Rinomina indice se serve
+
     if "country" in df.columns:
         df.set_index("country", inplace=True)
 
@@ -608,7 +657,7 @@ class BalanceComparisonPlotter:
         df_2019 = pd.read_csv(self.path_2019, index_col=0)
         df_2024 = pd.read_csv(self.path_2024, index_col=0)
 
-        # Verifica colonne richieste per ciascun file
+
         required_2019 = ["balance_MWh", "betweenness_2019"]
         required_2024 = ["balance_MWh", "betweenness_2024"]
 
@@ -620,7 +669,7 @@ class BalanceComparisonPlotter:
             if col not in df_2024.columns:
                 raise ValueError(f"Colonna '{col}' mancante nel file 2024.")
 
-        # Rinomina e seleziona
+
         df_2019 = df_2019[["balance_MWh", "betweenness_2019"]].rename(
             columns={"balance_MWh": "balance_MWh_2019"}
         )
@@ -753,8 +802,16 @@ if __name__ == "__main__":
     df_2019 = loader_2019.load_and_aggregate()
     loader_2019.save("../data/processed/aggregated_flows_2019.csv")
 
+
     builder_2019 = EnergyGraphBuilder(df_2019, label="2019")
     G_2019 = builder_2019.build_graph()
+
+
+    adj_2019 = builder_2019.adjacency_matrix(weighted=True)
+    adj_2019.to_csv("../metrics_2019/adjacency_matrix_2019.csv")
+
+    builder_2019.plot_adjacency_heatmap()
+
     metrics_2019 = builder_2019.compute_metrics()
     builder_2019.save_metrics("../metrics_2019")
     builder_2019.save_network_map("../figures/network_map_2019.png")
@@ -792,6 +849,12 @@ if __name__ == "__main__":
 
     builder_2024 = EnergyGraphBuilder(df_2024, label="2024")
     G_2024 = builder_2024.build_graph()
+
+    adj_2024 = builder_2024.adjacency_matrix(weighted=True)
+    adj_2024.to_csv("../metrics_2024/adjacency_matrix_2024.csv")
+
+    builder_2024.plot_adjacency_heatmap()
+
     metrics_2024 = builder_2024.compute_metrics()
     builder_2024.save_metrics("../metrics_2024")
     builder_2024.save_network_map("../figures/network_map_2024.png")
