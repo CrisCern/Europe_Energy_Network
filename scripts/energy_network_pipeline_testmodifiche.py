@@ -759,7 +759,6 @@ if __name__ == "__main__":
     builder_2019.save_metrics("../metrics_2019")
     builder_2019.save_network_map("../figures/network_map_2019.png")
     builder_2019.plot_degree_histograms("../figures/degree_distribution_2019.png")
-
     builder_2019.plot_and_save_top_edge_betweenness(
         top_percent=0.05,
         filename="../figures/edge_betweenness_top_2019.png"
@@ -774,6 +773,16 @@ if __name__ == "__main__":
     merger_2019 = CentralityMerger("../metrics_2019", label="2019")
     merger_2019.merge_and_save()
 
+    # === Analisi netta dei flussi 2019 (SPOSTATA QUI SOPRA) ===
+    analyzer_2019 = NetFlowAnalyzer(
+        "../data/raw/physical_energy_power_flows_2019.csv",
+        "../metrics_2019/net_flow_from_export_only_2019.csv"
+    )
+    analyzer_2019.load_and_filter()
+    analyzer_2019.compute_net_flow()
+    analyzer_2019.save_to_csv()
+    analyzer_2019.print_top_countries(label=" - 2019")
+
     # === 2. 2024 ===
     loader_2024 = EnergyDataLoader(
         "../data/raw/physical_energy_and_power_flows.csv", year=2024
@@ -787,11 +796,9 @@ if __name__ == "__main__":
     builder_2024.save_metrics("../metrics_2024")
     builder_2024.save_network_map("../figures/network_map_2024.png")
     builder_2024.plot_degree_histograms("../figures/degree_distribution_2024.png")
-
     builder_2024.plot_and_save_top_edge_betweenness(
         top_percent=0.05,
-    filename =
-    "../figures/edge_betweenness_top_2024.png"
+        filename="../figures/edge_betweenness_top_2024.png"
     )
 
     impact_analyzer = NodeRemovalImpactAnalyzer(
@@ -812,9 +819,19 @@ if __name__ == "__main__":
     merger_2024 = CentralityMerger("../metrics_2024", label="2024")
     merger_2024.merge_and_save()
 
+    # === Analisi netta dei flussi 2024 ===
+    analyzer_2024 = NetFlowAnalyzer(
+        "../data/raw/physical_energy_and_power_flows.csv",
+        "../metrics_2024/net_flow_from_export_only_2024.csv"
+    )
+    analyzer_2024.load_and_filter()
+    analyzer_2024.compute_net_flow()
+    analyzer_2024.save_to_csv()
+    analyzer_2024.print_top_countries(label=" - 2024")
+
+    # === Plot centralità ===
     visualizer = CentralityVisualizer()
 
-    # === Plot centralità 2019 ===
     visualizer.plot_top10_betweenness(
         "../metrics_2019/centrality_metrics_2019.csv",
         "../figures/top10_betweenness_2019.png"
@@ -828,7 +845,6 @@ if __name__ == "__main__":
         "../figures/radar_top5_2019.png"
     )
 
-    # === Plot centralità 2024 ===
     visualizer.plot_top10_betweenness(
         "../metrics_2024/centrality_metrics_2024.csv",
         "../figures/top10_betweenness_2024.png"
@@ -861,33 +877,12 @@ if __name__ == "__main__":
     builder_2024.save()
     builder_2024.preview()
 
-    # === Analisi netta dei flussi 2019 ===
-    analyzer_2019 = NetFlowAnalyzer(
-        "../data/raw/physical_energy_power_flows_2019.csv",
-        "../metrics_2019/net_flow_from_export_only_2019.csv"
-    )
-    analyzer_2019.load_and_filter()
-    analyzer_2019.compute_net_flow()
-    analyzer_2019.save_to_csv()
-    analyzer_2019.print_top_countries(label=" - 2019")
-
-    # === Analisi netta dei flussi 2024 ===
-    analyzer_2024 = NetFlowAnalyzer(
-        "../data/raw/physical_energy_and_power_flows.csv",
-        "../metrics_2024/net_flow_from_export_only_2024.csv"
-    )
-    analyzer_2024.load_and_filter()
-    analyzer_2024.compute_net_flow()
-    analyzer_2024.save_to_csv()
-    analyzer_2024.print_top_countries(label=" - 2024")
-
     # === Confronto finale tra 2019 e 2024: Paesi critici ===
     comparer = CriticalNodeComparer(
         "../metrics_2019/merged_btw_net_2019.csv",
         "../metrics_2024/merged_btw_net_2024.csv",
         "../figures/critical_nodes_comparison.png"
     )
-
     comparer.compare()
     comparer.plot_comparison()
 
@@ -895,7 +890,6 @@ if __name__ == "__main__":
         path_2019="../metrics_2019/merged_btw_net_2019.csv",
         path_2024="../metrics_2024/merged_btw_net_2024.csv"
     )
-
     plotter.plot_insights_2019()
     plotter.plot_insights_2024()
 
@@ -904,11 +898,8 @@ if __name__ == "__main__":
         path_2024="../metrics_2024/merged_btw_net_2024.csv",
         output_dir="../figures_comparison"
     )
-
     balance_plotter.plot_line_comparison()
     balance_plotter.plot_heatmap_comparison()
-
-
 
     # === Analisi cooperativa: Shapley Value (2024) ===
     shapley = ShapleyAnalyzer(
