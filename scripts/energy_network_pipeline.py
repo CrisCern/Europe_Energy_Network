@@ -69,7 +69,7 @@ class EnergyGraphBuilder:
     def adjacency_matrix(self, weighted=True):
 
         if self.G is None:
-            raise ValueError("Il grafo non è stato ancora costruito. Chiama build_graph() prima.")
+            raise ValueError("il grafo non è stato ancora costruito")
 
         if weighted:
             adj = nx.to_pandas_adjacency(self.G, weight="weight", dtype=float)
@@ -92,12 +92,9 @@ class EnergyGraphBuilder:
             sns.heatmap(adj_df, cmap=cmap, linewidths=0.5, linecolor="gray")
 
             plt.title(f"Heatmap Matrice di Adiacenza - {self.label}")
-            plt.xlabel("Paesi destinatari")
-            plt.ylabel("Paesi sorgente")
             plt.xticks(rotation=45, ha='right')
             plt.yticks(rotation=0)
             plt.tight_layout()
-
 
             project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
             figures_dir = os.path.join(project_root, "figures")
@@ -224,7 +221,7 @@ class NodeRemovalImpactAnalyzer:
         if "betweenness_2024" in betw.columns:
             betw = betw.rename(columns={"betweenness_2024": "betweenness"})
         critical_node = betw.sort_values("betweenness", ascending=False).iloc[0]
-        print(f"\n🔎 Nodo critico selezionato: {critical_node['country']} (Betweenness = {critical_node['betweenness']:.4f})")
+        print(f"Nodo critico selezionato: {critical_node['country']} (Betweenness = {critical_node['betweenness']:.4f})")
         return critical_node["country"]
 
     def _compute_average_shortest_path(self, graph):
@@ -602,12 +599,10 @@ class CriticalPlotter:
         self._plot_scatter_and_bar(df, year=2024)
 
     def _plot_scatter_and_bar(self, df, year):
-        # Rinomina la colonna betweenness_XXXX in 'betweenness' se necessario
         btw_col = f"betweenness_{year}"
         if btw_col in df.columns:
             df = df.rename(columns={btw_col: "betweenness"})
 
-        # Imposta l'indice sul paese se non già fatto
         if "country" in df.columns:
             df.set_index("country", inplace=True)
 
@@ -788,7 +783,11 @@ class ShapleyAnalyzer:
         plt.gca().invert_yaxis()
         plt.tight_layout()
 
-        output_path = os.path.join(os.path.dirname(self.output_csv), "shapley_values_plot.png")
+        project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        figures_dir = os.path.join(project_root, "figures")
+        os.makedirs(figures_dir, exist_ok=True)
+        output_path = os.path.join(figures_dir, "shapley_values_plot.png")
+
         plt.savefig(output_path)
         print(f" Grafico salvato in: {output_path}")
         plt.show()
