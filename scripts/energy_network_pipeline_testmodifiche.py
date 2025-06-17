@@ -75,6 +75,7 @@ class EnergyGraphBuilder:
         self.metrics[f"in_strength_{self.label}"] = dict(self.G.in_degree(weight='weight'))
         self.metrics[f"out_strength_{self.label}"] = dict(self.G.out_degree(weight='weight'))
         self.metrics[f"betweenness_{self.label}"] = nx.betweenness_centrality(self.G, weight='weight')
+        self.metrics[f"edge_betweenness_{self.label}"] = nx.edge_betweenness_centrality(self.G, weight ='weight')
         print(" Metriche calcolate.")
         return self.metrics
 
@@ -132,6 +133,41 @@ class EnergyGraphBuilder:
         plt.close()
         print(f" Istogramma gradi salvato: {output_path}")
 
+    def  plot_and_save_top_edge_betweenness(self, top_percent=0.05, filename=None):
+        key = f"edge_betweenness_{self.label}"
+        edge_bc = self.metrics.get(key)
+
+        if edge_bc is None:
+            raise ValueError(f"Edge betweenness centrality non trovata in self.metrics con chiave '{key}'.")
+
+        sorted_edges = sorted(edge_bc.items(), key=lambda x: x[1], reverse=True)
+        top_n = max(1, int(len(sorted_edges) * top_percent))
+        top_edges = set(edge for edge, _ in sorted_edges[:top_n])
+
+        pos = nx.spring_layout(self.G, seed=42)
+        nx.draw_networkx_nodes(self.G, pos, node_size=100, node_color='lightblue')
+        nx.draw_networkx_labels(self.G, pos, font_size=8)
+        nx.draw_networkx_edges(self.G, pos, edge_color='lightgray', width=1)
+        nx.draw_networkx_edges(
+            self.G,
+            pos,
+            edgelist=top_edges,
+            edge_color='red',
+            width=2.5,
+            label=f"Top {int(top_percent * 100)}% edge betweenness"
+        )
+
+        plt.title(f"Archi più centrali per edge betweenness ({self.label})")
+        plt.legend()
+        plt.axis('off')
+
+        if filename is None:
+            filename = f"edge_betweenness_{self.label}.png"
+
+        plt.savefig(filename, dpi=300, bbox_inches='tight')
+        plt.close()
+        print(f"Grafico salvato come: {filename}")
+
 
 class NodeRemovalImpactAnalyzer:
     def __init__(self, graph, betweenness_path, output_csv, output_png, seed=42):
@@ -182,7 +218,7 @@ class NodeRemovalImpactAnalyzer:
         })
         os.makedirs(os.path.dirname(self.output_csv), exist_ok=True)
         df.to_csv(self.output_csv, index=False)
-        print(f"📁 Risultati salvati in {self.output_csv}")
+        print(f" Risultati salvati in {self.output_csv}")
 
         # Plot
         plt.figure(figsize=(8, 5))
@@ -191,7 +227,7 @@ class NodeRemovalImpactAnalyzer:
         plt.ylabel("Lunghezza media dei cammini più brevi")
         plt.tight_layout()
         plt.savefig(self.output_png)
-        print(f"📸 Grafico salvato in {self.output_png}")
+        print(f" Grafico salvato in {self.output_png}")
         plt.close()
 
 
@@ -724,6 +760,11 @@ if __name__ == "__main__":
     builder_2019.save_network_map("../figures/network_map_2019.png")
     builder_2019.plot_degree_histograms("../figures/degree_distribution_2019.png")
 
+    builder_2019.plot_and_save_top_edge_betweenness(
+        top_percent=0.05,
+        filename="../figures/edge_betweenness_top_2019.png"
+    )
+
     detector_2019 = CommunityDetector(df_2019, label="2019")
     detector_2019.build_undirected_graph()
     detector_2019.detect_communities()
@@ -746,6 +787,12 @@ if __name__ == "__main__":
     builder_2024.save_metrics("../metrics_2024")
     builder_2024.save_network_map("../figures/network_map_2024.png")
     builder_2024.plot_degree_histograms("../figures/degree_distribution_2024.png")
+
+    builder_2024.plot_and_save_top_edge_betweenness(
+        top_percent=0.05,
+    filename =
+    "../figures/edge_betweenness_top_2024.png"
+    )
 
     impact_analyzer = NodeRemovalImpactAnalyzer(
         graph=G_2024,
