@@ -10,6 +10,8 @@ from itertools import combinations
 import math
 from tqdm import tqdm
 import random
+import geopandas as gpd
+import pycountry
 
 class EnergyDataLoader:
     def __init__(self, path, year=None, export_only=False, sep=";"):
@@ -322,6 +324,46 @@ class CommunityDetector:
         plt.savefig(output_path)
         plt.close()
         print(f" Mappa con comunità salvata: {output_path}")
+
+    def plot_geographic_communities(self, shapefile_path, output_path):
+        if self.partition is None:
+            raise ValueError("Le comunità non sono ancora calcolate")
+
+        europe = gpd.read_file(shapefile_path)
+        europe = europe[europe['CONTINENT'] == 'Europe']
+
+        europe['NAME_EN'] = europe['NAME'].apply(lambda name: pycountry.countries.get(name=name).alpha_3 if pycountry.countries.get(name=name) else None)
+        europe = europe.dropna(subset=['NAME_EN'])
+
+
+        df_partition = pd.DataFrame.from_dict(self.partition, orient='index', columns=['community'])
+        df_partition.index.name = 'country'
+        df_partition = df_partition.reset_index()
+
+        def country_to_iso3(country):
+            try:
+                return pycountry.countries.lookup(country).alpha_3
+            except:
+                return None
+
+        df_partition['iso3'] = df_partition['country'].apply(country_to_iso3)
+        df_partition = df_partition.dropna(subset=['iso3'])
+
+
+        europe = europe.merge(df_partition, left_on='NAME_EN', right_on='iso3', how='left')
+
+        # Plot
+        fig, ax = plt.subplots(figsize=(15, 10))
+        europe.boundary.plot(ax=ax, color='black', linewidth=0.5)
+        europe.dropna(subset=['community']).plot(column='community', ax=ax, cmap='tab20', edgecolor='black')
+
+        ax.set_title(f"Comunità energetiche - {self.label}", fontsize=15)
+        ax.axis('off')
+
+        os.makedirs(os.path.dirname(output_path), exist_ok=True)
+        plt.savefig(output_path, bbox_inches='tight')
+        plt.close()
+        print(f" Mappa geografica salvata: {output_path}")
 
 
 class CentralityMerger:
@@ -823,6 +865,10 @@ if __name__ == "__main__":
     detector_2019 = CommunityDetector(df_2019, label="2019")
     detector_2019.build_undirected_graph()
     detector_2019.detect_communities()
+    detector_2019.plot_geographic_communities(
+        shapefile_path="../data/shapefiles/ne_10m_admin_0_countries.shp",
+        output_path="../figures/map_communities_2019.png"
+    )
     detector_2019.save_partition("../metrics_2019/louvain_partition_2019.csv")
     detector_2019.save_partition_map("../figures/network_map_communities_2019.png")
 
@@ -875,6 +921,10 @@ if __name__ == "__main__":
     detector_2024 = CommunityDetector(df_2024, label="2024")
     detector_2024.build_undirected_graph()
     detector_2024.detect_communities()
+    detector_2024.plot_geographic_communities(
+        shapefile_path="../data/shapefiles/ne_10m_admin_0_countries.shp",
+        output_path="../figures/map_communities_2024.png"
+    )
     detector_2024.save_partition("../metrics_2024/louvain_partition_2024.csv")
     detector_2024.save_partition_map("../figures/network_map_communities_2024.png")
 
